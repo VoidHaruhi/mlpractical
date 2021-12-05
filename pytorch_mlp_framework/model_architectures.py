@@ -338,3 +338,234 @@ class ConvolutionalNetwork(nn.Module):
                 pass
 
         self.logit_linear_layer.reset_parameters()
+
+# Modified
+class ConvolutionalProcessingBlockBN(nn.Module):
+    def __init__(self, input_shape, num_filters, kernel_size, padding, bias, dilation):
+        super(ConvolutionalProcessingBlockBN, self).__init__()
+
+        self.num_filters = num_filters
+        self.kernel_size = kernel_size
+        self.input_shape = input_shape
+        self.padding = padding
+        self.bias = bias
+        self.dilation = dilation
+
+        self.build_module()
+
+    def build_module(self):
+        self.layer_dict = nn.ModuleDict()
+        x = torch.zeros(self.input_shape)
+        out = x
+
+        self.layer_dict['conv_0'] = nn.Conv2d(in_channels=out.shape[1], out_channels=self.num_filters, bias=self.bias,
+                                              kernel_size=self.kernel_size, dilation=self.dilation,
+                                              padding=self.padding, stride=1)
+
+        out = self.layer_dict['conv_0'].forward(out)
+        out = F.leaky_relu(out)
+
+        self.layer_dict['conv_1'] = nn.Conv2d(in_channels=out.shape[1], out_channels=self.num_filters, bias=self.bias,
+                                              kernel_size=self.kernel_size, dilation=self.dilation,
+                                              padding=self.padding, stride=1)
+
+        out = self.layer_dict['conv_1'].forward(out)
+        out = F.leaky_relu(out)
+
+        print(out.shape)
+        self.bn1 = nn.BatchNorm2d(self.num_filters) # BatchNorm
+        self.bn2 = nn.BatchNorm2d(self.num_filters) # BatchNorm
+
+    def forward(self, x):
+        out = x
+
+        out = self.layer_dict['conv_0'].forward(out)
+        out = self.bn1(out) # BatchNorm
+        out = F.leaky_relu(out)
+
+        out = self.layer_dict['conv_1'].forward(out)
+        out = self.bn2(out) # BatchNorm
+        out = F.leaky_relu(out)
+
+        return out
+
+
+class ConvolutionalDimensionalityReductionBlockBN(nn.Module):
+    def __init__(self, input_shape, num_filters, kernel_size, padding, bias, dilation, reduction_factor):
+        super(ConvolutionalDimensionalityReductionBlockBN, self).__init__()
+
+        self.num_filters = num_filters
+        self.kernel_size = kernel_size
+        self.input_shape = input_shape
+        self.padding = padding
+        self.bias = bias
+        self.dilation = dilation
+        self.reduction_factor = reduction_factor
+        self.build_module()
+
+    def build_module(self):
+        self.layer_dict = nn.ModuleDict()
+        x = torch.zeros(self.input_shape)
+        out = x
+
+        self.layer_dict['conv_0'] = nn.Conv2d(in_channels=out.shape[1], out_channels=self.num_filters, bias=self.bias,
+                                              kernel_size=self.kernel_size, dilation=self.dilation,
+                                              padding=self.padding, stride=1)
+
+        out = self.layer_dict['conv_0'].forward(out)
+        out = F.leaky_relu(out)
+
+        out = F.avg_pool2d(out, self.reduction_factor)
+
+        self.layer_dict['conv_1'] = nn.Conv2d(in_channels=out.shape[1], out_channels=self.num_filters, bias=self.bias,
+                                              kernel_size=self.kernel_size, dilation=self.dilation,
+                                              padding=self.padding, stride=1)
+
+        out = self.layer_dict['conv_1'].forward(out)
+        out = F.leaky_relu(out)
+
+        print(out.shape)
+        self.bn1 = nn.BatchNorm2d(self.num_filters) # BatchNorm
+        self.bn2 = nn.BatchNorm2d(self.num_filters) # BatchNorm
+
+    def forward(self, x):
+        out = x
+
+        out = self.layer_dict['conv_0'].forward(out)
+        out = self.bn1(out) # BatchNorm
+        out = F.leaky_relu(out)
+
+        out = F.avg_pool2d(out, self.reduction_factor)
+
+        out = self.layer_dict['conv_1'].forward(out)
+        out = self.bn2(out) # BatchNorm
+        out = F.leaky_relu(out)
+
+        return out
+
+class ConvolutionalProcessingBlockBNRes(nn.Module):
+    def __init__(self, input_shape, num_filters, kernel_size, padding, bias, dilation):
+        super(ConvolutionalProcessingBlockBNRes, self).__init__()
+
+        self.num_filters = num_filters
+        self.kernel_size = kernel_size
+        self.input_shape = input_shape
+        self.padding = padding
+        self.bias = bias
+        self.dilation = dilation
+
+        self.build_module()
+
+    def build_module(self):
+        self.layer_dict = nn.ModuleDict()
+        x = torch.zeros(self.input_shape)
+        out = x
+
+        self.layer_dict['conv_0'] = nn.Conv2d(in_channels=out.shape[1], out_channels=self.num_filters, bias=self.bias,
+                                              kernel_size=self.kernel_size, dilation=self.dilation,
+                                              padding=self.padding, stride=1)
+
+        out = self.layer_dict['conv_0'].forward(out)
+        out = F.leaky_relu(out)
+
+        self.layer_dict['conv_1'] = nn.Conv2d(in_channels=out.shape[1], out_channels=self.num_filters, bias=self.bias,
+                                              kernel_size=self.kernel_size, dilation=self.dilation,
+                                              padding=self.padding, stride=1)
+
+        out = self.layer_dict['conv_1'].forward(out)
+        out = F.leaky_relu(out)
+
+        print(out.shape)
+        self.bn1 = nn.BatchNorm2d(self.num_filters) # BatchNorm
+        self.bn2 = nn.BatchNorm2d(self.num_filters) # BatchNorm
+        if x.shape[2]!=self.num_filters:    # the dimension of filter is not equal
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(in_channels=x.shape[1], out_channels=self.num_filters, bias=self.bias,
+                                              kernel_size=self.kernel_size, dilation=self.dilation,
+                                              padding=self.padding, stride=1),
+                nn.BatchNorm2d(self.num_filters)
+            )
+        else:
+            self.shortcut = nn.Sequential() # Residual connection
+
+    def forward(self, x):
+        out = x
+
+        out = self.layer_dict['conv_0'].forward(out)
+        out = self.bn1(out) # BatchNorm   
+        out = F.leaky_relu(out)
+
+
+        out = self.layer_dict['conv_1'].forward(out)
+        out = self.bn2(out) # BatchNorm
+        out += self.shortcut(x) # Residual connection
+        out = F.leaky_relu(out)
+
+        return out
+
+
+class ConvolutionalDimensionalityReductionBlockBNRes(nn.Module):
+    def __init__(self, input_shape, num_filters, kernel_size, padding, bias, dilation, reduction_factor):
+        super(ConvolutionalDimensionalityReductionBlockBNRes, self).__init__()
+
+        self.num_filters = num_filters
+        self.kernel_size = kernel_size
+        self.input_shape = input_shape
+        self.padding = padding
+        self.bias = bias
+        self.dilation = dilation
+        self.reduction_factor = reduction_factor
+        self.build_module()
+
+    def build_module(self):
+        self.layer_dict = nn.ModuleDict()
+        x = torch.zeros(self.input_shape)
+        out = x
+
+        self.layer_dict['conv_0'] = nn.Conv2d(in_channels=out.shape[1], out_channels=self.num_filters, bias=self.bias,
+                                              kernel_size=self.kernel_size, dilation=self.dilation,
+                                              padding=self.padding, stride=1)
+
+        out = self.layer_dict['conv_0'].forward(out)
+        out = F.leaky_relu(out)
+
+        out = F.avg_pool2d(out, self.reduction_factor)
+
+        self.layer_dict['conv_1'] = nn.Conv2d(in_channels=out.shape[1], out_channels=self.num_filters, bias=self.bias,
+                                              kernel_size=self.kernel_size, dilation=self.dilation,
+                                              padding=self.padding, stride=1)
+
+        out = self.layer_dict['conv_1'].forward(out)
+        out = F.leaky_relu(out)
+
+        print(out.shape)
+        self.bn1 = nn.BatchNorm2d(self.num_filters) # BatchNorm
+        self.bn2 = nn.BatchNorm2d(self.num_filters) # BatchNorm
+        if x.shape[1]!=self.num_filters:    # the dimension of filter is not equal
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(in_channels=x.shape[1], out_channels=self.num_filters, bias=self.bias,
+                                              kernel_size=self.kernel_size, dilation=self.dilation,
+                                              padding=self.padding, stride=1),
+                nn.AvgPool2d(kernel_size=self.reduction_factor),
+                nn.BatchNorm2d(self.num_filters)
+            )
+        else:
+            self.shortcut = nn.Sequential(
+                nn.AvgPool2d(kernel_size=self.reduction_factor)
+            ) # Residual connection
+
+    def forward(self, x):
+        out = x
+
+        out = self.layer_dict['conv_0'].forward(out)
+        out = self.bn1(out) # BatchNorm
+        out = F.leaky_relu(out)
+
+        out = F.avg_pool2d(out, self.reduction_factor)
+
+        out = self.layer_dict['conv_1'].forward(out)
+        out = self.bn2(out) # BatchNorm
+        out += self.shortcut(x) # Residual connection
+        out = F.leaky_relu(out)
+
+        return out
