@@ -1,5 +1,5 @@
 %% REPLACE sXXXXXXX with your student number
-\def\studentNumber{sXXXXXXX}
+\def\studentNumber{s2178120}
 
 
 %% START of YOUR ANSWERS
@@ -24,58 +24,71 @@
 
 %% Question 1:
 \newcommand{\questionOne} {
-\youranswer{Question 1 - Use Figures 1, 2, and 3 to identify the Vanishing Gradient Problem (which of these model suffers from it, and what are the consequences depicted?).
-
-The average length for an answer to this question is approximately 1/5 of the columns in a 2-column page}
+\youranswer{We can see from Figure 1 that VGG08 model achieves a high accuracy and its loss descends by epoch, while VGG38 has an accuracy close to 0, and its loss does not descend. In Figure 2 and 3, the average gradients of VGG08 are in a reasonable scale, while the gradients of VGG38 are too small that the model cannot be trained by back propagation, thus suffers from VGP.}
 }
 
 %% Question 2:
 \newcommand{\questionTwo} {
-\youranswer{Question 2 - Describe Batch Normalization (BN) by using equations. Consider both training and test time and explain how BN addresses the vanishing gradient problem. Note that you are not required to provide the derivation of gradients w.r.t. weights for BN weights.
+\youranswer{
+Suppose we set the batch size of the model to $m$. The following analysis is the same for training and test phase.
 
-The average length of an answer to this question would be around 2/3 of a column in a 2-column page}
+For a particular batch, we calculate the mean and variance of the batch B, denoted as
+\begin{equation}
+    \label{eq.bn_mean_var}
+    \mu_B=\frac{1}{m}\sum_{i=1}^{m}x_i,\ and\  \sigma_B^2=\frac{1}{m}\sum_{i=1}^{m}(x_i-\mu_B)^2
+\end{equation}
+where $m$ is the batch size. For each $d$-dimensional input $x=(x^{(1)},x^{(2)},\dots,x^{(d})$, we normalize it as
+\begin{equation}
+    \label{eq.bn}
+    \hat{x}_i^{(k}=\frac{x_i^{(k)}-\mu_B^{(k)}}{\sqrt{{\sigma_B^{(k)}}^2+\epsilon}}
+\end{equation}
+where $k\in [1, d]$ is the dimension and $i\in [1,m]$.
+In Batch Norm, we restrict each dimension of each data within $[-1,1]$. Since $z=\sigma(w^T x+b)$ and $\frac{\partial z}{\partial  x}=w\frac{\partial z}{\partial \sigma}$, when x is restricted to a range, then $w$ can not be too large or too small (otherwise $z$ will be very different to the ground truth), so the gradient of $w$ will not be too large or too small, thus overcome the VGP in deep CNN. 
+}
 }
 
 %% Question 3:
 \newcommand{\questionThree} {
-\youranswer{Question 3 - Describe Residual Connections (RC) by using equations. Consider both training and test time and explain how RC address the vanishing gradient problem.
-
-The average length of an answer to this question would be around 1/2 of a column in a 2-column page}
+\youranswer{A simple way to express residual connection is
+\begin{equation}
+    x_L=F(x_l)+x_l
+\end{equation}
+where $F(x_l)$ is the output of a block with $x_l$ as input. If the loss is $L$, then the gradient is
+\begin{equation}
+    \frac{\partial L}{\partial x_l}=\frac{\partial L}{\partial x_L}\frac{\partial x_L}{\partial x_l}=\frac{\partial L}{\partial x_L}(\frac{\partial F}{\partial x_l}+I)
+\end{equation}
+where $I$ is the identity matrix. The result shows that the gradient of $x_l$ is not smaller than the gradient of $x_L$, which reduces the VGP problem.
+}
 }
 
 %% Question 4:
 \newcommand{\questionFour} {
-\youranswer{Question 4 - Present and discuss the experiment results (all of the results and not just the ones you had to fill in) in Table 1 and Figures 4 and 5 (you may use any of the other Figures if you think they are relevant to your analysis). You will have to determine what data are relevant to the discussion, and what information can be extracted from it. Also, discuss what further experiments you would have ran on any combination of VGG08, VGG38, BN, RC in order to
-\begin{itemize}
-    \item Improve performance of the model trained (explain why you expect your suggested experiments will help with this).
-    \item Learn more about the behaviour of BN and RC (explain what you are trying to learn and how).
-\end{itemize}
+\youranswer{The experiment results of the models are shown in Table~\ref{tab:CIFAR_results}. We can see that, VGG38 BN + RC with LR = 1e-2 achieves the best performance, which shows that BatchNorm and residual connection do help to boost the performance. It also implies that the combination of BatchNorm and residual connections is better than the parts. We can see that VGG38 BN beats VGG0, which indicates the contribution of BatchNorm in overcoming the VGP. The comparison between VGG38 BN and VGG38 RC shows that residual connection is more important to overcoming VGP than BatchNorm. We can also see that a higher learning rate leads to a better performance in our setting, which means that VGG38 model with LR = 1e-3 may suffers from underfitting. 
 
-The average length for an answer to this question is approximately 1 of the columns in a 2-column page}
+The training and validation curves for the best model is shown in Figure~\ref{fig:acc_cur_bestModel}. We can see that with BatchNorm and residual connections, the model converges faster and reaches a higher accuracy for both training and validation dataset. We can conclude that BatchNorm and residual connections can overcome VGP and help the model to converge.
+
+The gradient flow of the best model is shown in Figure~\ref{fig:grad_flow_bestModel}. The average gradient of VGG38 BN+RC is significantly greater than the gradients of VGG38 which has no BatchNorm and residual connections. This result implies that BatchNorm and residual connections can directly overcome VGP.
+
+Further experiments can be done. Firstly, the size of the residual block is not sufficiently explored in this work. Second, the architecture of the model is fixed in our experiments, we can test BatchNorm and residual connections on many more different architectures.
+
+The behaviour of BN and RC is not clear enough. To go a step further, we can analyze exactly how much the residual connections and BatchNorm contributes to each layer compared to the original architecture.
+}
 }
 
 %% Question 5:
 \newcommand{\questionFive} {
-\youranswer{Question 5 - Briefly draw your conclusions based on the results from the previous sections (what are the take-away messages?) and conclude your report with a recommendation for future work. 
-
-Good recommendations for future work also draw on the broader literature (the papers already referenced are good starting points). Great recommendations for future work are not just incremental (an example of an incremental suggestion would be: "we could also train with different learning rates") but instead also identify meaningful questions or, in other words, questions with answers that might be somewhat more generally applicable. 
-
-For example, \citep{huang2017densely} end with \begin{quote}``Because of their compact internal representations and reduced feature redundancy, DenseNets may be good feature extractors for various computer vision tasks that build on convolutional features, e.g.,  [4,5].''\end{quote} 
-
-while \cite{bengio1993problem} state in their conclusions that \begin{quote}``There remains theoretical questions to be considered,  such as whether the problem with simple gradient descent  discussed in this paper would be observed with  chaotic attractors that are not  hyperbolic.\\\end{quote}
-
-The length of this question description is indicative of the average length of a conclusion section}
+\youranswer{In this work, we compare the performance of VGG08 and VGG38 models and observes the VGP, as well as the visualization of the gradient flow. To overcome VGP, we apply Batch Normalization~\cite{ioffe2015batch} and Residual Connections~\cite{he2016deep} on VGG38 and achieves a higher performance than VGG08. The theoretical analysis is also proposed. There remains questions to answer, such as the behaviour of BN and RC, and the performance of more architectures with BN and RC applied.
+}
 }
 
 %% - - - - - - - - - - - - FIGURES - - - - - - - - - - - - 
 
 %% Question Figure 3:
 \newcommand{\questionFigureThree} {
-\youranswer{Question Figure 3 - Replace this image with a figure depicting the average gradient across layers, for the VGG38 model.
-%
+\youranswer{
 \begin{figure}[t]
     \centering
-    \includegraphics[width=\linewidth]{example-image-duck}
+    \includegraphics[width=\linewidth]{figures/grad_flow_vgg38.pdf}
     \caption{Gradient Flow on VGG38}
     \label{fig:grad_flow_38}
 \end{figure}
@@ -84,25 +97,23 @@ The length of this question description is indicative of the average length of a
 
 %% Question Figure 4:
 \newcommand{\questionFigureFour} {
-\youranswer{Question Figure 4 - Replace this image with a figure depicting the training curves for the model with the best performance across experiments you have available. (Also edit the caption accordingly).
-%
+\youranswer{
 \begin{figure}[t]
     \centering
-    \includegraphics[width=\linewidth]{example-image-duck}
-    \caption{Training curves for ? ? ?}
-    \label{fig:grad_flow_bestModel}
+    \includegraphics[width=\linewidth]{figures/bn_rc_38_accuracy_performance.pdf}
+    \caption{Training curves for VGG38 BN + RC}
+    \label{fig:acc_curve_bestModel}
 \end{figure}
 }
 }
 
 %% Question Figure 5:
 \newcommand{\questionFigureFive} {
-\youranswer{Question Figure 5 - Replace this image with a figure depicting the average gradient across layers, for the model with the best performance across experiments you have available. (Also edit the caption accordingly).
-%
+\youranswer{
 \begin{figure}[t]
     \centering
-    \includegraphics[width=\linewidth]{example-image-duck}
-    \caption{Gradient Flow on ? ? ?}
+    \includegraphics[width=\linewidth]{figures/grad_flow_vgg38_bnrc.pdf}
+    \caption{Gradient Flow on VGG38 BN + RC}
     \label{fig:grad_flow_bestModel}
 \end{figure}
 }
@@ -113,12 +124,6 @@ The length of this question description is indicative of the average length of a
 %% Question Table 1:
 \newcommand{\questionTableOne} {
 \youranswer{
-Question Table 1 - Fill in Table 1 with the results from your experiments on 
-\begin{enumerate}
-    \item \textit{VGG38 BN (LR 1e-3)}, and 
-    \item \textit{VGG38 BN + RC (LR 1e-2)}.
-\end{enumerate}
-%
 \begin{table*}[t]
     \centering
     \begin{tabular}{lr|ccccc}
@@ -127,11 +132,11 @@ Question Table 1 - Fill in Table 1 with the results from your experiments on
     \midrule
         VGG08                   & 1e-3 & 60 K      &  1.74      & 51.59     & 1.95     & 46.84 \\
         VGG38                   & 1e-3 & 336 K     &  4.61      & 00.01     & 4.61     & 00.01 \\
-        VGG38 BN                & 1e-3 &     ?     &     ?      &     ?     &    ?     &     ? \\
+        VGG38 BN                & 1e-3 & 339 K     &  1.51      & 56.92     & 1.99     & 47.48 \\
         VGG38 RC                & 1e-3 & 336 K     &  1.33      & 61.52     & 1.84     & 52.32 \\
         VGG38 BN + RC           & 1e-3 & 339 K     &  1.26      & 62.99     & 1.73     & 53.76 \\
         VGG38 BN                & 1e-2 & 339 K     &  1.70      & 52.28     & 1.99     & 46.72 \\
-        VGG38 BN + RC           & 1e-2 &     ?     &     ?      &     ?     &    ?     &     ? \\
+        VGG38 BN + RC           & 1e-2 & 339 K     &  0.77      & 76.63     & 1.70     & 59.72 \\
     \bottomrule
     \end{tabular}
     \caption{Experiment results (number of model parameters, Training and Validation loss and accuracy) for different combinations of VGG08, VGG38, Batch Normalisation (BN), and Residual Connections (RC), LR is learning rate.}

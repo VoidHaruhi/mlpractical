@@ -155,7 +155,7 @@ class ExperimentBuilder(nn.Module):
         """
         ########################################
         for param in named_parameters:
-            grad = torch.mean(param[1].grad).cpu()
+            grad = torch.mean(torch.abs(param[1].grad)).cpu() # calculate the mean of the grads
             layer_name = param[0]
             all_grads.append(grad)
             layers.append(layer_name)
